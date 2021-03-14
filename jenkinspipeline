@@ -1,0 +1,50 @@
+pipeline {
+    tools{
+        jdk 'myjava'
+        maven 'mymaven'
+    }
+    agent none
+    stages {
+        stage('checkout'){
+            agent any
+            steps{
+                git 'https://github.com/devops-trainer/DevOpsClassCodes.git'
+            }
+        }
+        stage('Compile') {
+                agent any
+                steps {
+                    sh 'mvn compile'
+                }
+            }
+        stage('CodeReview') {
+                agent any
+                steps {
+                    sh 'mvn pmd:pmd'
+                }
+            }
+        stage('UnitTest') {
+                agent any
+                steps {
+                    sh 'mvn test'
+                    junit 'target/surefire-reports/*.xml'
+            }
+        }    
+        stage('MetriCheck') {
+                agent any
+                steps {
+                    sh 'mvn cobertura:cobertura -Dcobertura.report.format=xml'
+				cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'target/site/cobertura/coverage.xml', conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false                  
+            }
+        }    
+        stage('Package') {
+                agent {label 'linux_slave'}
+                steps {
+                    git 'https://github.com/devops-trainer/DevOpsClassCodes.git'
+                    sh 'mvn package'
+                }
+            }
+            
+        }
+    }    
+    
